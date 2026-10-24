@@ -1,0 +1,37 @@
+name: runner
+
+# 空壳执行器：把私有仓库拉下来跑。
+# 这个仓库是公开的 —— 公开仓库的 Actions 分钟数不限，而"盯到 epoch 结束"很占时间。
+# 真正的代码、README、站点信息都留在私有仓库，外部看不到。
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "6,18,30,42,54 * * * *"   # 兜底；主力触发来自外部定时器
+
+permissions:
+  contents: read
+
+concurrency:
+  group: runner
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.TARGET_REPO }}
+          token: ${{ secrets.TARGET_REPO_PAT }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Run
+        env:
+          DH_COOKIE: ${{ secrets.DH_COOKIE }}
+        run: node claimer.mjs --cron --quiet
