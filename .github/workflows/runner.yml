@@ -35,3 +35,14 @@ jobs:
         env:
           DH_COOKIE: ${{ secrets.DH_COOKIE }}
         run: node claimer.mjs --cron --quiet
+
+      # 每日签到 + 宝藏领取。脚本内部按天算一个随机目标时间，没到点就直接退出，
+      # 所以每 12 分钟叫醒一次也不会重复签到。放在 always() 后面是为了挖矿领取
+      # 失败/超时的时候签到照样能跑；continue-on-error 保证它不会把整次运行标红。
+      - name: Daily check-in
+        if: always()
+        continue-on-error: true
+        env:
+          DH_COOKIE: ${{ secrets.DH_COOKIE }}
+          DAILY_WINDOW: "08:00-22:30"
+        run: node daily.mjs
